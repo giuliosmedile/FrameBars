@@ -10,7 +10,6 @@ import argparse
 from PIL import Image, ImageDraw
 
 # Setup
-# videopath = "/Users/smeds/Desktop/Game.of.Thrones.S07.BDRip.x264-ION10[rartv]/Game.of.Thrones.S07E01.BDRip.x264-ION10.mkv"
 videopath = "video.mp4"
 num_threads = 12
 def signal_handler()
