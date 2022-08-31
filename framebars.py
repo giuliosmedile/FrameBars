@@ -11,18 +11,16 @@ from PIL import Image, ImageDraw
 
 # Setup
 videopath = "video.mp4"
-num_threads = 12
-def signal_handler()
+num_threads = os.cpu_count()
 
 # Parse arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-t', '--threads', type=int, help="The number of running threads", default=num_threads)
-parser.add_argument('-p', '--path', type=str, help="The path of the video file you want to compute", default=videopath)
+parser.add_argument('-t', '--threads', type=int, help="The number of running threads. Defaults as the number of threads in your CPU (currently " + str(num_threads)+").", default=num_threads)
+parser.add_argument('-p', '--path', type=str, help="The path of the video file you want to compute. Defaults to video.mp4 contained in the folder.", default=videopath)
 args=parser.parse_args()
 num_threads, videopath = vars(args).values()
 print("About to analyze file at \""+videopath+"\".\nRunning threads: "+str(num_threads)+".\n")
 
-signal.signal(signal.SIGINT, signal_handler)
 vidcap = cv2.VideoCapture(videopath)
 length = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
 start = timeit.default_timer()
@@ -102,7 +100,3 @@ for i in range(num_threads):
 stop = timeit.default_timer()
 elapsed = (stop - start) +1
 print("\nFinished execution in %d seconds." % elapsed)
-    
-def signal_handler:
-	print("Signal")
-	exit(1)
