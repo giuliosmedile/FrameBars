@@ -12,18 +12,34 @@ from PIL import Image, ImageDraw
 # Setup
 videopath = "video.mp4"
 num_threads = os.cpu_count()
+avg_mode = True
 
 # Parse arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('-t', '--threads', type=int, help="The number of running threads. Defaults as the number of threads in your CPU (currently " + str(num_threads)+").", default=num_threads)
 parser.add_argument('-p', '--path', type=str, help="The path of the video file you want to compute. Defaults to video.mp4 contained in the folder.", default=videopath)
+parser.add_argument('-d', '--dominant', action='store_false', help="Whether you want to compute the image using the dominant color. By default, the average color will be used.", default=avg_mode)
 args=parser.parse_args()
-num_threads, videopath = vars(args).values()
-print("About to analyze file at \""+videopath+"\".\nRunning threads: "+str(num_threads)+".\n")
+num_threads, videopath, avg_mode = vars(args).values()
+print("About to analyze file at \""+videopath+"\".\nRunning threads: "+str(num_threads)+".")
+if avg_mode:
+	print("Will be using average color of frame.\n")
+else:
+	print("Will be using dominant color of frame.\n")
 
+# Load video
 vidcap = cv2.VideoCapture(videopath)
 length = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
 start = timeit.default_timer()
+
+def dominant_col(img, tn):
+	# TODO
+	return average_col(img)
+
+def average_col(img):
+	average = img.mean(axis=0).mean(axis=0)
+	col = (int(average[2]), int(average[1]), int(average[0]))
+	return col
 
 def dowork(initial_frame, frames, tn):
 	# Initial loop setup
@@ -32,32 +48,35 @@ def dowork(initial_frame, frames, tn):
 	r_w = w / frames
 	canvas = Image.new("RGB", (w, h))
 	# Create the directory
-	current_directory = os.getcwd()
-	final_directory = os.path.join(current_directory, str(tn))
-	if not os.path.exists(final_directory):
-   		os.makedirs(final_directory)
+	# current_directory = os.getcwd()
+	# final_directory = os.path.join(current_directory, str(tn))
+	# if not os.path.exists(final_directory):
+ #   		os.makedirs(final_directory)
 	# Set the first frame
 	vidcap = cv2.VideoCapture(videopath)
 	vidcap.set(cv2.CAP_PROP_POS_FRAMES, initial_frame-1)
 	success, img = vidcap.read()
 	for i in tqdm(range(frames), leave=False): 
-	    cv2.imwrite("./"+str(tn)+"/frame.jpg", img)     # save frame as JPEG file    
+	    #cv2.imwrite("./"+str(tn)+"/frame.jpg", img)     # save frame as JPEG file    
 	    success,img = vidcap.read()
 	    if not success: 
 	        break
-	    # Calculate average color
-	    average = img.mean(axis=0).mean(axis=0)
-	    col = (int(average[2]), int(average[1]), int(average[0]))
+	    # Calculate color
+	    img=cv2.resize(img, dsize=(100, 100))
+	    if avg_mode:
+	    	col = average_col(img)
+	    else:
+	    	col = dominant_col(img, tn)
 	    # Draw the stripe
 	    img1 = ImageDraw.Draw(canvas)
 	    shape = (int(count * r_w), 0, int((count + 1) * r_w), h)  
 	    img1.rectangle(shape, fill = col, outline = col)
 	    # Remove the temp frame, repeat
-	    os.remove("./"+str(tn)+"/frame.jpg")
+	    #os.remove("./"+str(tn)+"/frame.jpg")
 	    count += 1
 	#canvas.show()
 	canvas.save("%d.jpg" % tn)
-	os.rmdir(str(tn))
+	# os.rmdir(str(tn))
 
 # Calculate the initial frames for each thread
 start_frames = []
