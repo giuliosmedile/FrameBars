@@ -4,9 +4,10 @@ import threading
 import os
 import cv2
 import numpy as np
-import math
 import timeit
 import argparse
+import mimetypes
+import re
 from PIL import Image, ImageDraw
 
 # Setup
@@ -27,8 +28,29 @@ if avg_mode:
 else:
 	print("Will be using dominant color of frame.\n")
 
+# Check if file exists...
+if not os.path.exists(videopath):
+	print("File \"" + videopath + "\" was not found. Please make sure the file exists, and try again.")
+	exit(1)
+
+# If it is a video...
+try:
+	if not mimetypes.guess_type(videopath)[0].startswith('video'):
+		print("File \"" + videopath + "\" is not recognized as a videofile. Please make sure the file is not corrupted, and try again.")
+		exit(1)
+except:
+	print("File \"" + videopath + "\" is not recognized as a videofile. Please make sure the file is not corrupted, and try again.")
+	exit(1)
+
 # Load video
 vidcap = cv2.VideoCapture(videopath)
+
+# ... and check if cv2 can open it
+if vidcap is None or not vidcap.isOpened():
+	print("File \"" + videopath + "\" could not be correctly opened by the OpenCV library. Please try again, or try with a different file.")
+	exit(1)
+
+# Get info from video
 length = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
 start = timeit.default_timer()
 
@@ -109,7 +131,11 @@ final_img = Image.new("RGB", (images[0].width * num_threads, images[0].height))
 for i in range(num_threads):
 	final_img.paste(images[i], ((images[0].width * i), 0)) 
 final_img.show()
-final_img.save("output_" + str(random()) +".jpg")
+
+# And save the output
+match = re.search(r'[^\\/]+?(?=\.\w+$)', videopath)
+output_name = match.group()
+final_img.save("output_" + output_name +".jpg")
 
 # Clean up the temporary jpgs
 for i in range(num_threads):
